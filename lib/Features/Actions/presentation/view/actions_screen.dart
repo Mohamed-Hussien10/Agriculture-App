@@ -1,25 +1,151 @@
+import 'package:agriculture_app/Features/Actions/data/models/action_model.dart';
+import 'package:agriculture_app/Features/Actions/presentation/manager/actions_cubit.dart';
+import 'package:agriculture_app/Features/Actions/presentation/manager/actions_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:agriculture_app/Features/Actions/presentation/view/widgets/action_item.dart';
-import 'package:agriculture_app/Features/Actions/presentation/view/widgets/documentation_item.dart';
 import 'package:agriculture_app/Features/Actions/presentation/view/widgets/recommendation_item.dart';
 import 'package:agriculture_app/Features/Actions/presentation/view/widgets/section_card.dart';
-import 'package:flutter/material.dart';
 
 class ActionsScreen extends StatelessWidget {
   const ActionsScreen({super.key});
 
+  void _showAddActionDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final cubit = context.read<ActionsCubit>();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: Colors.white,
+            title: const Text(
+              'إضافة إجراء جديد',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0A3D38),
+              ),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      labelText: 'عنوان الإجراء',
+                      labelStyle: const TextStyle(color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'وصف الإجراء',
+                      labelStyle: const TextStyle(color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+            ),
+
+            actions: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                      color: Color(0xFF0A3D38),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'إلغاء',
+                    style: TextStyle(
+                      color: Color(0xFF0A3D38),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.isNotEmpty &&
+                        descriptionController.text.isNotEmpty) {
+                      cubit.addAction(
+                        ActionItemModel(
+                          title: titleController.text,
+                          description: descriptionController.text,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A3D38),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'حفظ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A3D38),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-              child: Row(
-                children: [
-                  const Text(
+    return BlocBuilder<ActionsCubit, ActionsState>(
+      builder: (context, state) {
+        final cubit = context.read<ActionsCubit>();
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF0A3D38),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showAddActionDialog(context),
+            backgroundColor: Color(0xFF0A3D38),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  child: const Text(
                     'التوصيات والإجراءات',
                     style: TextStyle(
                       color: Colors.white,
@@ -27,173 +153,107 @@ class ActionsScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
+                ),
+
+                // Content
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(32),
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 26,
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 30),
+                      child: Column(
+                        children: [
+                          // Recommendations
+                          const SectionCard(
+                            title: "التوصيات - المصائد",
+                            icon: Icons.bug_report_rounded,
+                            children: [
+                              RecommendationItem(
+                                name: "مصائد لاصقة صفراء",
+                                description:
+                                    "وضع المصائد في الأماكن المناسبة لرصد الحشرات.",
+                              ),
+                              RecommendationItem(
+                                name: "مصائد فرمونية",
+                                description:
+                                    "استخدام المصائد الفرمونية لجذب الحشرات المستهدفة.",
+                              ),
+                              RecommendationItem(
+                                name: "مصائد مائية ملونة",
+                                description:
+                                    "وضع المصائد الملونة المائية لجذب الحشرات الطائرة.",
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          const SectionCard(
+                            title: "التوصيات - المبيدات الحيوية",
+                            icon: Icons.science_rounded,
+                            children: [
+                              RecommendationItem(
+                                name: "المبيد 1: إيمامكتين بنزوات",
+                                description:
+                                    "استخدام المبيد الحيوي بمعدل التركيز الموصى به.",
+                              ),
+                              RecommendationItem(
+                                name: "المبيد 2: اسبينوساد",
+                                description:
+                                    "تطبيق المبيد على النباتات المصابة وفق التوجيهات.",
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // User saved actions
+                          if (state is ActionsLoaded &&
+                              state.actions.isNotEmpty)
+                            SectionCard(
+                              title: "إجراءاتك المحفوظة",
+                              icon: Icons.list_alt_rounded,
+                              children: [
+                                for (var action in state.actions) ...[
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: ActionItem(
+                                          number: "-",
+                                          title: action.title,
+                                          description: action.description,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed:
+                                            () => cubit.deleteAction(action),
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                              ],
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Content Area
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 30),
-                  child: Column(
-                    children: [
-                      // تحليل المشكلة
-                      const SectionCard(
-                        title: "تحليل المشكلة (بناءً على البيانات)",
-                        icon: Icons.analytics_rounded,
-                        content:
-                            "بناءً على الارتفاع المفاجئ في الحركة والتنبيهات البيئية، يلزم اتخاذ إجراء تصحيحي فوري للتحكم في مستوى الرطوبة وتجنب تفاقم المشكلة.",
-                      ),
-                      const SizedBox(height: 16),
-
-                      // التوصية الأساسية
-                      SectionCard(
-                        title: "التوصية الأساسية",
-                        icon: Icons.lightbulb_rounded,
-                        children: const [
-                          RecommendationItem(
-                            name: "الإجراء التصحيحي (X): إجراء حرج",
-                            description:
-                                "رش المحلول الكيميائي المعتمد بتركيز 1.5 مل/لتر (محسوب تلقائيًا).",
-                          ),
-                          SizedBox(height: 14),
-                          RecommendationItem(
-                            name: "الجدول الزمني للتنفيذ (Y): الليلة أو فورًا",
-                            description:
-                                "يجب التنفيذ فورًا لمنع تفاقم المشكلة.",
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // الإجراءات البيئية المساندة
-                      SectionCard(
-                        title: "الإجراءات البيئية المساندة",
-                        icon: Icons.eco_rounded,
-                        children: const [
-                          ActionItem(
-                            number: "1",
-                            title: "تعزيز التهوية",
-                            description:
-                                "زيادة تشغيل التهوية لمدة 30 دقيقة (لخفض الرطوبة).",
-                          ),
-                          SizedBox(height: 14),
-                          ActionItem(
-                            number: "2",
-                            title: "تعديل الري اليومي",
-                            description:
-                                "تقليل كمية المياه اليومية بنسبة 10% (للتحكم في الرطوبة).",
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // توثيق التنفيذ
-                      SectionCard(
-                        title: "توثيق تنفيذ الإجراء",
-                        icon: Icons.description_rounded,
-                        children: const [
-                          DocumentationItem(
-                            label: "عرض السجلات التفصيلية",
-                            description: "تم بدء التنفيذ (الحالة: قيد التنفيذ)",
-                          ),
-                          SizedBox(height: 12),
-                          DocumentationItem(
-                            label: "ملاحظة التنفيذ",
-                            description:
-                                "اضغط للانتقال إلى لوحة تحكم مبسطة. المتابعة: (تسجيل التاريخ/الوقت/الملاحظات)",
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Action Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0A3D38),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 18,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 8,
-                                shadowColor: Colors.black26,
-                              ),
-                              onPressed: () {
-                                // تنفيذ الإجراءات
-                              },
-                              child: const Text(
-                                "تنفيذ الإجراءات",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF0A3D38),
-                                side: const BorderSide(
-                                  color: Color(0xFF0A3D38),
-                                  width: 2,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 18,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                "تجاهل",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

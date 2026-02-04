@@ -1,3 +1,8 @@
+import 'package:agriculture_app/Features/Actions/presentation/manager/actions_cubit.dart';
+import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
+import 'package:agriculture_app/Features/Dashboard/data/services/model_service.dart';
+import 'package:agriculture_app/Features/Dashboard/presentation/manager/dashboard_cubit.dart';
+import 'package:agriculture_app/Features/Dashboard/presentation/manager/model_cubit.dart';
 import 'package:agriculture_app/core/routing/app_routes.dart';
 import 'package:agriculture_app/core/themes/app_colors.dart';
 import 'package:agriculture_app/core/utils/utils.dart';
@@ -5,6 +10,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agriculture_app/core/routing/app_router.dart';
@@ -155,44 +161,51 @@ class AgricultureApp extends StatelessWidget {
     bool isLandscape,
     double textScale,
   ) {
-    return Builder(
-      builder: (context) {
-        return MaterialApp(
-          title: 'Agriculture App',
-          debugShowCheckedModeBanner: false,
-          scaffoldMessengerKey: MessageService().scaffoldMessengerKey,
-          navigatorKey: AppRouter.navigatorKey,
-          theme: _buildAppTheme(
-            context,
-            isDesktop,
-            isTablet,
-            isWindows,
-            isLandscape,
-          ),
-          onGenerateRoute: appRouter.generateRoute,
-          initialRoute: AppRoutes.mainNavigationScreen,
-          builder: (context, child) {
-            return ScrollConfiguration(
-              behavior: AdaptiveScrollBehavior(),
-              child: GestureDetector(
-                onTap: () => Utils.closeKeyboard(context),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler:
-                        isWindows
-                            ? TextScaler.noScaling
-                            : TextScaler.linear(textScale),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => DashboardCubit(DashboardService())),
+        BlocProvider(create: (_) => ActionsCubit()),
+        BlocProvider(create: (_) => ModelCubit(ModelService())),
+      ],
+      child: Builder(
+        builder: (context) {
+          return MaterialApp(
+            title: 'Agriculture App',
+            debugShowCheckedModeBanner: false,
+            scaffoldMessengerKey: MessageService().scaffoldMessengerKey,
+            navigatorKey: AppRouter.navigatorKey,
+            theme: _buildAppTheme(
+              context,
+              isDesktop,
+              isTablet,
+              isWindows,
+              isLandscape,
+            ),
+            onGenerateRoute: appRouter.generateRoute,
+            initialRoute: AppRoutes.mainNavigationScreen,
+            builder: (context, child) {
+              return ScrollConfiguration(
+                behavior: AdaptiveScrollBehavior(),
+                child: GestureDetector(
+                  onTap: () => Utils.closeKeyboard(context),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler:
+                          isWindows
+                              ? TextScaler.noScaling
+                              : TextScaler.linear(textScale),
+                    ),
+                    child: child ?? const SizedBox.shrink(),
                   ),
-                  child: child ?? const SizedBox.shrink(),
                 ),
-              ),
-            );
-          },
-          localizationsDelegates: context.localizationDelegates,
-          supportedLocales: context.supportedLocales,
-          locale: const Locale('ar'),
-        );
-      },
+              );
+            },
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: const Locale('ar'),
+          );
+        },
+      ),
     );
   }
 
