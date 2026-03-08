@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:agriculture_app/Features/Auth/presentation/manager/auth_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/dashboard_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/model_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
@@ -25,22 +25,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+
     dashboardCubit = DashboardCubit(DashboardService());
 
-    dashboardCubit.connectHub().then((_) {
-      dashboardCubit.getSensorWithLive('room-112');
-      dashboardCubit.autoFallbackHistorical(
-        'room-112',
-        '2025-01-01',
-        '2025-12-31',
-        timeoutSeconds: 3,
-      );
-    });
+    /// Start fetching sensor data
+    dashboardCubit.startFetchingData();
   }
 
   @override
   void dispose() {
-    dashboardCubit.disconnectHub();
+    dashboardCubit.stopFetchingData();
     super.dispose();
   }
 
@@ -53,19 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedImage = File(image.path);
       });
     }
-  }
-
-  Map<String, String> _liveDataFromHistorical(
-    Map<String, dynamic>? historical,
-  ) {
-    return {
-      'temperature': '${historical?['temperature'] ?? '--'}°C',
-      'humidity': '${historical?['humidity'] ?? '--'}%',
-      'motion':
-          historical?['motion'] != null
-              ? (historical!['motion'] ? 'نعم' : 'لا')
-              : '--',
-    };
   }
 
   @override
@@ -81,14 +62,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'temperature': '--',
             'humidity': '--',
             'motion': '--',
+            'soil': '--',
           };
 
           if (state is DashboardLiveUpdated || state is DashboardConnected) {
             final data = (state as dynamic).liveData;
             if (data != null) liveData = Map<String, String>.from(data);
-          } else if (state is DashboardHistoricalLoaded &&
-              state.historicalData.isNotEmpty) {
-            liveData = _liveDataFromHistorical(state.historicalData.first);
           }
 
           if (state is DashboardLoading) {
@@ -120,40 +99,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     const SizedBox(height: 20),
 
-                    /// HEADER + LIVE SENSORS
-                    Column(
+                    /// HEADER
+                    Stack(
                       children: [
-                        const Icon(
-                          Icons.visibility,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'FarmEye',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        Center(
+                          child: Column(
+                            children: const [
+                              SizedBox(height: 8),
+                              Icon(
+                                Icons.visibility,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'FarmEye',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            CircularSensor(
-                              value: liveData['temperature'] ?? '--',
-                              label: 'درجة الحرارة',
+                        Positioned(
+                          left: 0,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.logout,
+                              color: Colors.white,
+                              size: 28,
                             ),
-                            CircularSensor(
-                              value: liveData['humidity'] ?? '--',
-                              label: 'رطوبة التربة',
-                            ),
-                            CircularSensor(
-                              value: liveData['motion'] ?? '--',
-                              label: 'حركة',
-                            ),
-                          ],
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('تسجيل الخروج'),
+                                      content: const Text(
+                                        'هل تريد تسجيل الخروج؟',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(context),
+                                          child: const Text('إلغاء'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            context.read<AuthCubit>().logout();
+                                            Navigator.pushReplacementNamed(
+                                              context,
+                                              '/loginScreen',
+                                            );
+                                          },
+                                          child: const Text('تأكيد'),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// LIVE SENSOR DATA
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        CircularSensor(
+                          value: liveData['temperature'] ?? '--',
+                          label: 'درجة الحرارة',
+                        ),
+                        CircularSensor(
+                          value: liveData['humidity'] ?? '--',
+                          label: 'الرطوبة',
+                        ),
+                        CircularSensor(
+                          value: liveData['soil'] ?? '--',
+                          label: 'رطوبة التربة',
+                        ),
+                        CircularSensor(
+                          value: liveData['motion'] ?? '--',
+                          label: 'حركة',
                         ),
                       ],
                     ),
@@ -175,11 +208,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const TodayWeatherCard(),
                           const SizedBox(height: 24),
 
-                          /// AI MODEL SECTION
+                          /// AI MODEL
                           ModelDetectionSection(
                             image: selectedImage,
                             onPickImage: pickImage,
                           ),
+
                           const SizedBox(height: 24),
                         ],
                       ),

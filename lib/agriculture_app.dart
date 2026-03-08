@@ -1,4 +1,6 @@
 import 'package:agriculture_app/Features/Actions/presentation/manager/actions_cubit.dart';
+import 'package:agriculture_app/Features/Auth/data/services/auth_service.dart';
+import 'package:agriculture_app/Features/Auth/presentation/manager/auth_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/model_service.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/dashboard_cubit.dart';
@@ -166,6 +168,7 @@ class AgricultureApp extends StatelessWidget {
         BlocProvider(create: (_) => DashboardCubit(DashboardService())),
         BlocProvider(create: (_) => ActionsCubit()),
         BlocProvider(create: (_) => ModelCubit(ModelService())),
+        BlocProvider(create: (_) => AuthCubit(AuthService())),
       ],
       child: Builder(
         builder: (context) {
@@ -182,7 +185,7 @@ class AgricultureApp extends StatelessWidget {
               isLandscape,
             ),
             onGenerateRoute: appRouter.generateRoute,
-            initialRoute: AppRoutes.mainNavigationScreen,
+            initialRoute: AppRoutes.splashScreen,
             builder: (context, child) {
               return ScrollConfiguration(
                 behavior: AdaptiveScrollBehavior(),

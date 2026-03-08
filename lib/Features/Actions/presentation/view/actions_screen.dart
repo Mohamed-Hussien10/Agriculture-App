@@ -52,6 +52,7 @@ class ActionsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   TextField(
                     controller: descriptionController,
+                    maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'وصف الإجراء',
                       labelStyle: const TextStyle(color: Colors.grey),
@@ -62,63 +63,69 @@ class ActionsScreen extends StatelessWidget {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    maxLines: 3,
                   ),
                 ],
               ),
             ),
-
             actions: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: Color(0xFF0A3D38),
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    'إلغاء',
-                    style: TextStyle(
-                      color: Color(0xFF0A3D38),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (titleController.text.isNotEmpty &&
-                        descriptionController.text.isNotEmpty) {
-                      cubit.addAction(
-                        ActionItemModel(
-                          title: titleController.text,
-                          description: descriptionController.text,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFF0A3D38),
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A3D38),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        child: const Text(
+                          'إلغاء',
+                          style: TextStyle(
+                            color: Color(0xFF0A3D38),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    'حفظ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (titleController.text.isNotEmpty &&
+                              descriptionController.text.isNotEmpty) {
+                            cubit.addAction(
+                              ActionItemModel(
+                                title: titleController.text,
+                                description: descriptionController.text,
+                              ),
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0A3D38),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'حفظ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -136,13 +143,12 @@ class ActionsScreen extends StatelessWidget {
           backgroundColor: const Color(0xFF0A3D38),
           floatingActionButton: FloatingActionButton(
             onPressed: () => _showAddActionDialog(context),
-            backgroundColor: Color(0xFF0A3D38),
+            backgroundColor: const Color(0xFF0A3D38),
             child: const Icon(Icons.add, color: Colors.white),
           ),
           body: SafeArea(
             child: Column(
               children: [
-                // Header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                   child: const Text(
@@ -154,8 +160,6 @@ class ActionsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // Content
                 Expanded(
                   child: Container(
                     width: double.infinity,
@@ -169,7 +173,6 @@ class ActionsScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(20, 28, 20, 30),
                       child: Column(
                         children: [
-                          // Recommendations
                           const SectionCard(
                             title: "التوصيات - المصائد",
                             icon: Icons.bug_report_rounded,
@@ -192,33 +195,30 @@ class ActionsScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 16),
-
                           const SectionCard(
                             title: "التوصيات - المبيدات الحيوية",
                             icon: Icons.science_rounded,
                             children: [
                               RecommendationItem(
-                                name: "المبيد 1: إيمامكتين بنزوات",
+                                name: "إيمامكتين بنزوات",
                                 description:
                                     "استخدام المبيد الحيوي بمعدل التركيز الموصى به.",
                               ),
                               RecommendationItem(
-                                name: "المبيد 2: اسبينوساد",
+                                name: "اسبينوساد",
                                 description:
                                     "تطبيق المبيد على النباتات المصابة وفق التوجيهات.",
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
-
-                          // User saved actions
                           if (state is ActionsLoaded &&
                               state.actions.isNotEmpty)
                             SectionCard(
                               title: "إجراءاتك المحفوظة",
                               icon: Icons.list_alt_rounded,
                               children: [
-                                for (var action in state.actions) ...[
+                                for (final action in state.actions) ...[
                                   Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,

@@ -1,125 +1,49 @@
-import 'dart:async';
-import 'package:signalr_core/signalr_core.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class DashboardService {
-  final String hubUrl = 'https://agricultur.runasp.net/liveDataHub';
+  final List<String> apiUrls = [
+    "http://10.152.177.107:5084/api/sensor",
+    "http://10.152.177.108:5084/api/sensor",
+  ];
 
-  late HubConnection _connection;
-
-  bool get isConnected => _connection.state == HubConnectionState.connected;
-
-  // =========================
-  // Init & Connection
-  // =========================
-  Future<void> initConnection() async {
-    print('[Service] 🔗 Initializing Hub connection...');
-    _connection =
-        HubConnectionBuilder()
-            .withUrl(
-              hubUrl,
-              HttpConnectionOptions(transport: HttpTransportType.webSockets),
-            )
-            .withAutomaticReconnect()
-            .build();
-
-    _connection.onclose(
-      (error) => print('[Service][Hub] ❌ Connection closed: $error'),
-    );
-    _connection.onreconnecting(
-      (error) => print('[Service][Hub] 🔄 Reconnecting: $error'),
-    );
-    _connection.onreconnected(
-      (connectionId) =>
-          print('[Service][Hub] ✅ Reconnected, ConnectionId: $connectionId'),
-    );
-
-    try {
-      await _connection.start();
-      print('[Service] ✅ Hub connected successfully');
-    } catch (e) {
-      print('[Service][Error] ❌ Failed to start Hub: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> closeConnection() async {
-    if (_connection.state == HubConnectionState.connected ||
-        _connection.state == HubConnectionState.reconnecting) {
-      print('[Service] 🔌 Stopping Hub connection...');
-      await _connection.stop();
-      print('[Service] ✅ Hub connection stopped');
-    }
-  }
+  bool isConnected = false;
 
   // =========================
-  // Hub Methods
+  // Fetch Sensor Data
   // =========================
-  Future<void> getSensorDataWithLive(String sensorId, int historyLimit) async {
-    if (!isConnected)
-      throw Exception('Cannot invoke GetSensorDataWithLive: Hub not connected');
+  Future<Map<String, dynamic>> getSensorData() async {
+    for (String url in apiUrls) {
+      try {
+        print('[Service] 🌐 Trying: $url');
 
-    try {
-      print(
-        '[Service] 🎯 Invoking GetSensorDataWithLive for $sensorId with historyLimit=$historyLimit',
-      );
-      await _connection.invoke(
-        'GetSensorDataWithLive',
-        args: [sensorId, historyLimit],
-      );
-      print('[Service] 🌱 GetSensorDataWithLive request sent successfully');
-    } catch (e) {
-      print('[Service][Error] ❌ GetSensorDataWithLive failed: $e');
-      rethrow;
-    }
-  }
+        final response = await http
+            .get(Uri.parse(url))
+            .timeout(const Duration(seconds: 3));
 
-  // =========================
-  // Event Listeners
-  // =========================
-  void onLiveData(void Function(dynamic data) onData) {
-    _connection.on('LiveData', (arguments) {
-      if (arguments != null && arguments.isNotEmpty) {
-        final data = arguments.first;
-        if (data is Map<String, dynamic>) {
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
           final mappedData = {
             'temperature': data['temperature'],
             'humidity': data['humidity'],
             'motion': data['motion'],
+            'soil': data['soil'],
           };
-          print('[Service][Hub] 🌱 LiveData mapped: $mappedData');
-          onData(mappedData);
-        }
-      }
-    });
-  }
 
-  void onHistoricalData(void Function(dynamic records) onData) {
-    _connection.on('HistoricalData', (arguments) {
-      if (arguments != null && arguments.isNotEmpty) {
-        final data = arguments.first;
-        if (data is List) {
-          final mappedRecords =
-              data
-                  .map(
-                    (item) => {
-                      'temperature': item['temperature'],
-                      'humidity': item['humidity'],
-                      'motion': item['motion'],
-                    },
-                  )
-                  .toList();
-          print('[Service][Hub] 📜 HistoricalData mapped: $mappedRecords');
-          onData(mappedRecords);
-        }
-      }
-    });
-  }
+          isConnected = true;
 
-  void onError(void Function(String error) onError) {
-    _connection.on('Error', (arguments) {
-      if (arguments != null && arguments.isNotEmpty) {
-        onError(arguments.first.toString());
+          print('[Service] ✅ Connected to $url');
+          print('[Service] 🌱 Sensor Data: $mappedData');
+
+          return mappedData;
+        }
+      } catch (e) {
+        print('[Service] ❌ Failed to connect to $url');
       }
-    });
+    }
+
+    isConnected = false;
+    throw Exception("All sensor servers are unreachable");
   }
 }

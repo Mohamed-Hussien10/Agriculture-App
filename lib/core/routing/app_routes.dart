@@ -5,5 +5,7 @@ class AppRoutes {
   static const String alertsScreen = "/alertsScreen";
   static const String actionsScreen = "/actionsScreen";
   static const String mainNavigationScreen = "/mainNavigationScreen";
+  static const String loginScreen = "/loginScreen";
+  static const String splashScreen = "/splashScreen";
   static const String rootScreen = "/";
 }
