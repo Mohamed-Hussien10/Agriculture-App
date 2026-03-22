@@ -15,7 +15,7 @@ class DashboardService {
   Future<Map<String, dynamic>> getSensorData() async {
     for (String url in apiUrls) {
       try {
-        print('[Service] 🌐 Trying: $url');
+       // print('[Service] 🌐 Trying: $url');
 
         final response = await http
             .get(Uri.parse(url))
@@ -39,11 +39,21 @@ class DashboardService {
           return mappedData;
         }
       } catch (e) {
-        print('[Service] ❌ Failed to connect to $url');
+        // print('[Service] ❌ Failed to connect to $url');
       }
     }
-
     isConnected = false;
-    throw Exception("All sensor servers are unreachable");
+    final defaultData = {
+      'temperature': 0.0,
+      'humidity': 0.0,
+      'motion': false,
+      'soil': 0.0,
+    };
+
+    // print(
+    //   '[Service] ⚠️ All sensor servers are unreachable, returning default: $defaultData',
+    // );
+
+    return defaultData;
   }
 }

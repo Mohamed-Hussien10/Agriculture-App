@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:agriculture_app/Features/Auth/presentation/manager/auth_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/dashboard_cubit.dart';
-import 'package:agriculture_app/Features/Dashboard/presentation/manager/model_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
-import 'package:agriculture_app/Features/Dashboard/data/services/model_service.dart';
-import 'package:agriculture_app/Features/Dashboard/presentation/view/widgets/model_detection_section.dart';
+import 'package:agriculture_app/Features/Dashboard/presentation/view/widgets/live_detection_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -54,7 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: dashboardCubit),
-        BlocProvider(create: (_) => ModelCubit(ModelService())),
+        // LiveDetectionCubit is already provided in agriculture_app.dart
       ],
       child: BlocBuilder<DashboardCubit, DashboardState>(
         builder: (context, state) {
@@ -208,12 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const TodayWeatherCard(),
                           const SizedBox(height: 24),
 
-                          /// AI MODEL
-                          ModelDetectionSection(
-                            image: selectedImage,
-                            onPickImage: pickImage,
-                          ),
-
+                          LiveDetectionSection(),
                           const SizedBox(height: 24),
                         ],
                       ),

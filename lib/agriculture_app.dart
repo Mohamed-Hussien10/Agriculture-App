@@ -2,9 +2,9 @@ import 'package:agriculture_app/Features/Actions/presentation/manager/actions_cu
 import 'package:agriculture_app/Features/Auth/data/services/auth_service.dart';
 import 'package:agriculture_app/Features/Auth/presentation/manager/auth_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
-import 'package:agriculture_app/Features/Dashboard/data/services/model_service.dart';
+import 'package:agriculture_app/Features/Dashboard/data/services/live_detection_service.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/dashboard_cubit.dart';
-import 'package:agriculture_app/Features/Dashboard/presentation/manager/model_cubit.dart';
+import 'package:agriculture_app/Features/Dashboard/presentation/manager/live_detection_cubit.dart';
 import 'package:agriculture_app/core/routing/app_routes.dart';
 import 'package:agriculture_app/core/themes/app_colors.dart';
 import 'package:agriculture_app/core/utils/utils.dart';
@@ -167,7 +167,7 @@ class AgricultureApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => DashboardCubit(DashboardService())),
         BlocProvider(create: (_) => ActionsCubit()),
-        BlocProvider(create: (_) => ModelCubit(ModelService())),
+        BlocProvider(create: (_) => LiveDetectionCubit(LiveDetectionService())),
         BlocProvider(create: (_) => AuthCubit(AuthService())),
       ],
       child: Builder(
