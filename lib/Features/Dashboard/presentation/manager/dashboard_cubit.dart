@@ -3,8 +3,8 @@ import 'package:agriculture_app/Features/Alerts/data/models/alert_model.dart';
 import 'package:agriculture_app/Features/Alerts/presentation/view/widgets/alert_severity.dart';
 import 'package:agriculture_app/Features/Alerts/data/services/alerts_local_service.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/dashboard_service.dart';
+import 'package:agriculture_app/core/services/local_notification_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 part 'dashboard_state.dart';
 
@@ -185,45 +185,5 @@ class DashboardCubit extends Cubit<DashboardState> {
   Future<void> close() {
     _timer?.cancel();
     return super.close();
-  }
-}
-
-// =========================
-// Local Notification Service
-// =========================
-
-class LocalNotificationService {
-  static final _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  static Future<void> init() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-    );
-
-    await _flutterLocalNotificationsPlugin.initialize(settings);
-  }
-
-  static Future<void> showNotification({
-    required String title,
-    required String body,
-  }) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'alerts_channel',
-          'Alerts Channel',
-          channelDescription: 'Channel for farm alerts',
-          importance: Importance.max,
-          priority: Priority.high,
-        );
-
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await _flutterLocalNotificationsPlugin.show(0, title, body, details);
   }
 }
