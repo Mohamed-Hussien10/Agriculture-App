@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
-import 'detection_painter.dart';
+import 'package:agriculture_app/Features/Dashboard/presentation/view/widgets/detection_painter.dart';
 import 'yuv_to_jpg_converter.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/live_detection_cubit.dart';
 import 'package:agriculture_app/Features/Dashboard/presentation/manager/live_detection_state.dart';
@@ -18,18 +18,46 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
   bool isProcessing = false;
   bool isLiveRunning = false;
   bool isInitializing = false; // Prevent concurrent initialization
+  bool _isDisposed = false;
   double previewWidth = 0;
   double previewHeight = 0;
 
   @override
   void dispose() {
-    stopCamera();
+    _isDisposed = true;
+    _stopCameraWithoutSetState();
     super.dispose();
+  }
+
+  Future<void> _stopCameraWithoutSetState() async {
+    final localController = controller;
+    controller = null;
+
+    if (localController != null) {
+      try {
+        if (localController.value.isStreamingImages) {
+          await localController.stopImageStream();
+        }
+        await localController.dispose();
+      } catch (e) {
+        debugPrint("Error stopping camera: $e");
+      }
+    }
+
+    if (!_isDisposed && mounted) {
+      try {
+        context.read<LiveDetectionCubit>().clearDetections();
+        context.read<LiveDetectionCubit>().closeWebSocket();
+      } catch (e) {
+        debugPrint("Error clearing detections: $e");
+      }
+    }
   }
 
   Future<void> startCamera() async {
     // Prevent multiple camera starts
     if (isInitializing ||
+        _isDisposed ||
         (controller != null && controller!.value.isInitialized)) {
       debugPrint("Camera already running or initializing");
       return;
@@ -39,7 +67,7 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
 
     try {
       final cameras = await availableCameras();
-      if (cameras.isEmpty) {
+      if (cameras.isEmpty || _isDisposed) {
         debugPrint("No cameras available on this device.");
         return;
       }
@@ -58,11 +86,13 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      // Check again if already streaming
-      if (!controller!.value.isInitialized) {
+      // Check again if already streaming or disposed
+      if (_isDisposed || !controller!.value.isInitialized) {
         debugPrint("Camera not initialized");
         return;
       }
+
+      if (!mounted) return;
 
       setState(() {
         isLiveRunning = true;
@@ -72,7 +102,8 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
       context.read<LiveDetectionCubit>().startListening();
 
       controller!.startImageStream((CameraImage image) async {
-        if (!isLiveRunning ||
+        if (_isDisposed ||
+            !isLiveRunning ||
             isProcessing ||
             controller == null ||
             !controller!.value.isInitialized)
@@ -82,7 +113,7 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
 
         try {
           final jpegBytes = convertYUV420ToJPG(image);
-          if (mounted && isLiveRunning) {
+          if (mounted && isLiveRunning && !_isDisposed) {
             context.read<LiveDetectionCubit>().sendFrame(
               jpegBytes,
               previewWidth,
@@ -103,35 +134,14 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
   }
 
   Future<void> stopCamera() async {
-    // Capture and null out the controller immediately so the build method
-    // stops rendering CameraPreview before we dispose it.
-    final localController = controller;
-
     if (!mounted) return;
-    // Use setState to properly trigger rebuild BEFORE disposing
+    
     setState(() {
       isLiveRunning = false;
       isProcessing = false;
-      controller = null; // Null out in setState to trigger rebuild
     });
 
-    if (localController != null) {
-      try {
-        if (localController.value.isStreamingImages) {
-          await localController.stopImageStream();
-        }
-        await localController.dispose();
-      } catch (e) {
-        debugPrint("Error stopping camera: $e");
-      }
-    }
-
-    // Clear detections and close WebSocket when camera stops
-    if (mounted) {
-      context.read<LiveDetectionCubit>().clearDetections();
-      // Also close the WebSocket connection
-      context.read<LiveDetectionCubit>().closeWebSocket();
-    }
+    await _stopCameraWithoutSetState();
   }
 
   @override
@@ -244,10 +254,12 @@ class _LiveDetectionSectionState extends State<LiveDetectionSection> {
                       : BlocBuilder<LiveDetectionCubit, LiveDetectionState>(
                         builder: (context, state) {
                           // Get detections from state
-                          final detections =
-                              state is LiveDetectionActive
-                                  ? state.detections
-                                  : <Detection>[];
+                          List<Detection> detections;
+                          if (state is LiveDetectionActive) {
+                            detections = state.detections;
+                          } else {
+                            detections = [];
+                          }
                           // Check if controller is still valid
                           if (controller == null ||
                               !controller!.value.isInitialized) {

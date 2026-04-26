@@ -5,6 +5,7 @@ import 'package:agriculture_app/Features/Dashboard/presentation/view/widgets/det
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:agriculture_app/Features/Dashboard/data/services/live_detection_service.dart';
+import 'package:agriculture_app/core/services/app_notification_service.dart';
 import 'live_detection_state.dart';
 
 class LiveDetectionCubit extends Cubit<LiveDetectionState> {
@@ -12,6 +13,8 @@ class LiveDetectionCubit extends Cubit<LiveDetectionState> {
   StreamSubscription? _streamSubscription;
   bool _isActive = false;
   int _frameCount = 0;
+  DateTime? _lastNotificationTime;
+  static const double _confidenceThreshold = 0.5;
 
   LiveDetectionCubit(this.service) : super(const LiveDetectionInitial());
 
@@ -94,6 +97,14 @@ class LiveDetectionCubit extends Cubit<LiveDetectionState> {
                 frameCount: _frameCount,
               ),
             );
+
+            // Check if any detection exceeds 50% confidence and trigger notification
+            for (final detection in detectionObjects) {
+              if (detection.confidence >= _confidenceThreshold) {
+                _showHighConfidenceAlert(detection.label, detection.confidence);
+                break;
+              }
+            }
           } else {
             debugPrint("⚠️ Server response does not contain 'detections'");
           }
@@ -149,6 +160,20 @@ class LiveDetectionCubit extends Cubit<LiveDetectionState> {
   void reset() {
     closeWebSocket();
     emit(const LiveDetectionInitial());
+  }
+
+  void _showHighConfidenceAlert(String label, double confidence) {
+    final now = DateTime.now();
+    // Limit notifications to once every 30 seconds
+    if (_lastNotificationTime != null &&
+        now.difference(_lastNotificationTime!).inSeconds < 30) {
+      return;
+    }
+
+    _lastNotificationTime = now;
+
+    // Show notification (works in foreground, background, and when app is closed)
+    AppNotificationService.showPestAlert(label, confidence);
   }
 
   @override

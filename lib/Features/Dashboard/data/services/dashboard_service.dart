@@ -1,59 +1,69 @@
+import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class DashboardService {
-  final List<String> apiUrls = [
-    "http://10.152.177.107:5084/api/sensor",
-    "http://10.152.177.108:5084/api/sensor",
-  ];
+  final String wsUrl = "ws://agriculturewsserver.runasp.net/ws";
+
+  WebSocketChannel? _channel;
 
   bool isConnected = false;
 
+  // Stream Controller (expose data to Cubit)
+  final _controller = StreamController<Map<String, dynamic>>();
+
+  Stream<Map<String, dynamic>> get stream => _controller.stream;
+
   // =========================
-  // Fetch Sensor Data
+  // Connect
   // =========================
-  Future<Map<String, dynamic>> getSensorData() async {
-    for (String url in apiUrls) {
-      try {
-       // print('[Service] 🌐 Trying: $url');
+  void connect() {
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      isConnected = true;
 
-        final response = await http
-            .get(Uri.parse(url))
-            .timeout(const Duration(seconds: 3));
+      print('[WS] ✅ Connected');
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
+      _channel!.stream.listen(
+        (message) {
+          try {
+            final data = jsonDecode(message);
 
-          final mappedData = {
-            'temperature': data['temperature'],
-            'humidity': data['humidity'],
-            'motion': data['motion'],
-            'soil': data['soil'],
-          };
+            final mappedData = {
+              'temperature': data['temperature'],
+              'humidity': data['humidity'],
+              'motion': data['motion'],
+              'soil': data['soil'],
+            };
 
-          isConnected = true;
+            print('[WS] 🌱 $mappedData');
 
-          print('[Service] ✅ Connected to $url');
-          print('[Service] 🌱 Sensor Data: $mappedData');
-
-          return mappedData;
-        }
-      } catch (e) {
-        // print('[Service] ❌ Failed to connect to $url');
-      }
+            // Push to stream
+            _controller.add(mappedData);
+          } catch (e) {
+            print('[WS] ❌ Parse error: $e');
+          }
+        },
+        onError: (error) {
+          print('[WS] ❌ Error: $error');
+          isConnected = false;
+        },
+        onDone: () {
+          print('[WS] 🔌 Disconnected');
+          isConnected = false;
+        },
+      );
+    } catch (e) {
+      print('[WS] ❌ Connection failed: $e');
+      isConnected = false;
     }
+  }
+
+  // =========================
+  // Disconnect
+  // =========================
+  void disconnect() {
+    _channel?.sink.close();
     isConnected = false;
-    final defaultData = {
-      'temperature': 0.0,
-      'humidity': 0.0,
-      'motion': false,
-      'soil': 0.0,
-    };
-
-    // print(
-    //   '[Service] ⚠️ All sensor servers are unreachable, returning default: $defaultData',
-    // );
-
-    return defaultData;
   }
 }

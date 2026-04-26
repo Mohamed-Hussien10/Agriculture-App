@@ -1,5 +1,5 @@
 import 'package:agriculture_app/agriculture_app.dart';
-import 'package:agriculture_app/core/services/local_notification_service.dart';
+import 'package:agriculture_app/core/services/app_notification_service.dart';
 import 'package:agriculture_app/core/helpers/app_localizations.dart';
 import 'package:agriculture_app/core/routing/app_router.dart';
 import 'package:flutter/foundation.dart';
@@ -13,10 +13,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LocalNotificationService.init();
 
-  // Request notification permissions after initialization
-  await LocalNotificationService.requestPermissions();
+  // Initialize all notification services (local + background)
+  await AppNotificationService.init();
 
   await EasyLocalization.ensureInitialized();
   await ScreenUtil.ensureScreenSize();

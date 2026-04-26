@@ -94,58 +94,67 @@ class TodayWeatherCardContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               /// Temperature Section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${weather.temp.round()}',
-                        style: const TextStyle(
-                          fontSize: 56,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          height: 0.9,
-                          letterSpacing: -2,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          '°م',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w600,
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '${weather.temp.round()}',
+                            style: const TextStyle(
+                              fontSize: 56,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              height: 0.9,
+                              letterSpacing: -2,
+                            ),
+                            overflow: TextOverflow.fade,
+                            softWrap: false,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            '°م',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Text(
-                      WeatherUtils.toEgyptian(weather.description),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Text(
+                        WeatherUtils.toEgyptian(weather.description),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
 
               /// Weather Icon
               Container(
@@ -167,10 +176,26 @@ class TodayWeatherCardContent extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Image.network(
-                      'https://openweathermap.org/img/wn/${weather.icon}@2x.png',
-                      width: 70,
-                      height: 70,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        'https://openweathermap.org/img/wn/${weather.icon}@2x.png',
+                        width: 70,
+                        height: 70,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 70,
+                            height: 70,
+                            color: Colors.white.withOpacity(0.1),
+                            child: Icon(
+                              Icons.sunny,
+                              color: Colors.yellowAccent.shade100,
+                              size: 48,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),

@@ -3,7 +3,7 @@ import 'package:agriculture_app/Features/Dashboard/data/models/today_weather.dar
 import 'package:http/http.dart' as http;
 
 class WeatherService {
-  static const String _apiKey = 'eafd94ccabe55535cbc95611f5427646';
+  static const String _apiKey = '853bc4a6eead78b398f1eeee98f619a9';
 
   Future<TodayWeather> fetchTodayWeather({
     required double lat,

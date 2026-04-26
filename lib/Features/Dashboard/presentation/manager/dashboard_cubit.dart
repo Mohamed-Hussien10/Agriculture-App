@@ -19,15 +19,15 @@ class DashboardCubit extends Cubit<DashboardState> {
   };
 
   List<Alert> savedAlerts = [];
-  Timer? _timer;
+  StreamSubscription? _subscription;
 
   DashboardCubit(this.service) : super(DashboardInitial()) {
-    print('[Cubit] 🚀 DashboardCubit initialized');
+    print('[Cubit] 🚀 Initialized');
     loadSavedAlerts();
   }
 
   // =========================
-  // Load saved alerts
+  // Load Alerts
   // =========================
   Future<void> loadSavedAlerts() async {
     savedAlerts = await AlertsLocalService.getAlerts();
@@ -43,35 +43,41 @@ class DashboardCubit extends Cubit<DashboardState> {
   }
 
   // =========================
-  // Start Fetching Sensor Data
+  // Start Listening (REAL-TIME)
   // =========================
-  Future<void> startFetchingData() async {
+  void startFetchingData() {
     emit(DashboardLoading());
 
-    _timer?.cancel();
+    _subscription?.cancel();
 
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-      try {
-        final data = await service.getSensorData();
+    service.connect();
+
+    _subscription = service.stream.listen(
+      (data) {
         _updateLiveData(data);
-      } catch (e) {
+      },
+      onError: (e) {
         emit(DashboardError(message: e.toString()));
-      }
-    });
+      },
+      onDone: () {
+        emit(DashboardDisconnected());
+      },
+    );
 
     emit(DashboardConnected(liveData: liveData));
   }
 
   // =========================
-  // Stop Fetching
+  // Stop Listening
   // =========================
   void stopFetchingData() {
-    _timer?.cancel();
+    _subscription?.cancel();
+    service.disconnect();
     emit(DashboardDisconnected());
   }
 
   // =========================
-  // Update Live Data
+  // Update UI Data
   // =========================
   void _updateLiveData(Map<String, dynamic> data) {
     try {
@@ -88,7 +94,7 @@ class DashboardCubit extends Cubit<DashboardState> {
 
       _checkAlerts(liveData);
     } catch (e) {
-      print('[Cubit][ParseError] ❌ Failed to parse live data: $e');
+      print('[Cubit] ❌ Parse Error: $e');
     }
   }
 
@@ -107,7 +113,6 @@ class DashboardCubit extends Cubit<DashboardState> {
     final motion = liveData['motion'];
 
     final now = DateTime.now();
-
     final timestamp =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
@@ -152,28 +157,25 @@ class DashboardCubit extends Cubit<DashboardState> {
       );
     }
 
-    // Remove duplicates
-    List<Alert> filteredNewAlerts = [];
+    // Prevent duplicates
+    List<Alert> filtered = [];
 
     for (var alert in newAlerts) {
       bool exists = savedAlerts.any(
         (a) => a.type == alert.type && a.description == alert.description,
       );
 
-      if (!exists) {
-        filteredNewAlerts.add(alert);
-      }
+      if (!exists) filtered.add(alert);
     }
 
-    if (filteredNewAlerts.isEmpty) return;
+    if (filtered.isEmpty) return;
 
-    savedAlerts.insertAll(0, filteredNewAlerts);
-
+    savedAlerts.insertAll(0, filtered);
     await AlertsLocalService.saveAlerts(savedAlerts);
 
     emit(DashboardAlertsUpdated(alerts: savedAlerts));
 
-    for (var alert in filteredNewAlerts) {
+    for (var alert in filtered) {
       LocalNotificationService.showNotification(
         title: alert.type,
         body: alert.description,
@@ -183,7 +185,8 @@ class DashboardCubit extends Cubit<DashboardState> {
 
   @override
   Future<void> close() {
-    _timer?.cancel();
+    _subscription?.cancel();
+    service.disconnect();
     return super.close();
   }
 }
